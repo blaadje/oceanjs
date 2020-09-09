@@ -1,0 +1,23 @@
+1 - [x] make a 3d engine
+2 - [x] make a 3d flatten square
+3 - [x] make a platform of flatten square
+4 - [x] adding volume to platform
+5 - [x] animate the volume
+6 - [x] add basic textures
+7 - [x] perspective
+8 - [ ] smoothing texture
+9 - [ ] improve perf with webworker
+10 - [ ] use fourier method
+
+
+// rotation axe x <=
+// y' = y * cosine(angle) - z * sine(angle)
+// z' = y * sine(angle) + z * cosine(angle)
+
+// rotation axe z
+// x' = x * cosine(angle) - y * sine(angle)
+// y' = x * sine(angle) + y * cosine(angle)
+
+// rotation axe y <=
+// x' = x * cosine(angle) - z * sine(angle)
+// z' = x * sine(angle) + z * cosine(angle)

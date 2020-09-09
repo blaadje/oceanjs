@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "import-from-worker": "^1.0.1",
+    "parcel": "^1.12.4"
+  },
+  "scripts": {
+    "start": "yarn parcel index.html —hmr-port 55432 -p 3000",
+    "build": "yarn parcel build index.html --public-url ./"
+  }
+}
