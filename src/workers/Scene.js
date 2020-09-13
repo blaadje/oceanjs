@@ -51,16 +51,12 @@ class Scene {
     for (let i = 0; i < this.texture.data.length; i += rgba) {
       let xoff = this.flying
       const r = this.texture.data[i]
-      const g = this.texture.data[i + 1]
-      const b = this.texture.data[i + 2]
-
       const ratio = 255
 
       this.texture.data[i] =
         r + Math.round(await map(noise(xoff, yoff), 0, 1, -ratio, ratio))
 
       yoff += 0.2
-      xoff += 0.1
     }
   }
 
