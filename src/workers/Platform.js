@@ -5,6 +5,7 @@ export default class Platform {
   constructor(position, size = 70, subVerticesAmount = 9, texture) {
     this.size = size
     this.subVerticesAmount = subVerticesAmount
+    this.textureWidth = 50
     this.vertices = [
       new Vertex(-1, 1, -1),
       new Vertex(1, 1, -1),
@@ -13,16 +14,16 @@ export default class Platform {
     ]
 
     this.vertices = this.vertices.map(({ x, y, z }) => {
-      const updatedX = x * (size / 2) + position.x
-      const updatedY = y * position.y + 400
-      const updatedZ = z * (size / 2) + position.z - 600
+      const updatedX = x * (this.size / 2) + position.x
+      const updatedY = y * position.y
+      const updatedZ = z * (this.size / 2) + position.z + 400
 
       return new Vertex(updatedX, updatedY, updatedZ)
     })
-
     this.subVertices = this.calculateSubVertices()
-
     this.movingSubVertices = [...this.subVertices]
+    this.textureTriangles = this.createTextureTriangles()
+    this.texture = this.setTexture(texture)
   }
 
   getVertices() {
@@ -35,6 +36,19 @@ export default class Platform {
 
   getMovingSubVertices() {
     return this.movingSubVertices
+  }
+
+  setTexture(texture) {
+    createImageBitmap(texture, {
+      resizeHeight: this.textureWidth,
+      resizeWidth: this.textureWidth,
+    }).then((image) => {
+      this.texture = image
+    })
+  }
+
+  getTexture() {
+    return this.texture
   }
 
   setVertice(index, vertex) {
@@ -71,7 +85,6 @@ export default class Platform {
     var r = d / vertex.y
 
     return new Vertex2D(r * vertex.x, r * vertex.z)
-    // return new Vertex2D(vertex.x, vertex.y)
   }
 
   rotate(phi, theta, centerX, centerY) {
@@ -106,29 +119,27 @@ export default class Platform {
     this.movingSubVertices = subVertices
   }
 
-  textureMap(context, texture, triangles, size = 10) {
-    const u0 = 0
-    const u1 = size
-    const u2 = size
-    const v0 = size
-    const v1 = 0
-    const v2 = size
+  textureMap(context, triangles, textureTriangles) {
+    for (let i = 0; i < triangles.length; i++) {
+      const triangle = triangles[i]
+      const textureTriangle = textureTriangles[i]
 
-    triangles.forEach((triangle) => {
       const { x: x0, y: y0 } = this.project(triangle[0])
       const { x: x1, y: y1 } = this.project(triangle[1])
       const { x: x2, y: y2 } = this.project(triangle[2])
+      const { x: u0, y: v0 } = textureTriangle[0]
+      const { x: u1, y: v1 } = textureTriangle[1]
+      const { x: u2, y: v2 } = textureTriangle[2]
 
-      context.fillStyle = '#050f1b'
       context.save()
       context.beginPath()
       context.moveTo(x0, y0)
       context.lineTo(x1, y1)
       context.lineTo(x2, y2)
       context.closePath()
-      context.fill()
+      // context.fill()
       // context.stroke()
-      // context.clip()
+      context.clip()
 
       var delta = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2
       var delta_a = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2
@@ -158,12 +169,42 @@ export default class Platform {
         delta_c / delta,
         delta_f / delta,
       )
-      // context.drawImage(texture, 0, 0)
+      context.drawImage(this.texture, 0, 0)
       context.restore()
-    })
+    }
+  }
+
+  createTextureTriangles() {
+    const gap = Math.floor(this.textureWidth / this.subVerticesAmount)
+    const array = []
+
+    for (let y = 0; y < this.movingSubVertices.length - 1; y++) {
+      const tempArray = []
+      for (let x = 0; x < this.movingSubVertices[y].length - 1; x++) {
+        const firstTextureTriangle = {
+          0: new Vertex2D(gap * x, gap * y),
+          1: new Vertex2D(gap * x, gap * (y + 1)),
+          2: new Vertex2D(gap * (x + 1), gap * (y + 1)),
+        }
+        const secondTextureTriangle = {
+          0: new Vertex2D(gap * x, gap * y),
+          1: new Vertex2D(gap * (x + 1), gap * y),
+          2: new Vertex2D(gap * (x + 1), gap * (y + 1)),
+        }
+        tempArray.push([firstTextureTriangle, secondTextureTriangle])
+      }
+
+      array.push(tempArray)
+    }
+
+    return array
   }
 
   draw(context) {
+    if (!this.texture) {
+      return
+    }
+
     for (let y = 0; y < this.movingSubVertices.length - 1; y++) {
       for (let x = 0; x < this.movingSubVertices[y].length - 1; x++) {
         const firstTriangle = {
@@ -179,25 +220,10 @@ export default class Platform {
 
         this.textureMap(
           context,
-          this.texture,
           [firstTriangle, secondTriangle],
-          this.textureSize,
+          this.textureTriangles[y][x],
         )
       }
     }
-    // movingSubVertices2D.forEach((dimension) => {
-    //   dimension.forEach((vertices) => {
-    //     const [firstSubVertex, ...otherSubVertices] = vertices
-    //     context.beginPath()
-    //     context.fillStyle = 'rgb(1, 60, 139, 0.1)'
-    //     context.strokeStyle = 'rgb(1, 60, 139, 1)'
-    //     context.moveTo(firstSubVertex.x, firstSubVertex.y)
-    //     otherSubVertices.forEach((subVertex) => {
-    //       // context.lineTo(subVertex.x, subVertex.y)
-    //     })
-    //     context.stroke()
-    //     context.fill()
-    //   })
-    // })
   }
 }

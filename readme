@@ -5,9 +5,10 @@
 5 - [x] animate the volume
 6 - [x] add basic textures
 7 - [x] perspective
-8 - [ ] smoothing texture
-9 - [ ] improve perf with webworker
-10 - [ ] use fourier method
+8 - [ ] vertex map displacement
+9 - [ ] smoothing texture
+10 - [ ] improve perf with webworker
+11 - [ ] use fourier method
 
 
 // rotation axe x <=
