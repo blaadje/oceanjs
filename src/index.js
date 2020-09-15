@@ -1,6 +1,7 @@
 import * as Comlink from 'comlink'
 import 'regenerator-runtime/runtime'
-import importedImage from './water.jpg'
+import importedImage from './ocean2.jpg'
+import water from './water.jpg'
 import { loadImageWithPromise, createNewImageDataFromImage } from './utils'
 
 const Main = async () => {
@@ -10,22 +11,23 @@ const Main = async () => {
   let height = canvas.offsetHeight
   let width = canvas.offsetWidth
 
-  canvas.style.transform = 'scale(1.1)'
+  canvas.style.transform = 'scale(0.99)'
   canvas.style.userSelect = 'none'
-  canvas2.width = 900
-  canvas2.height = 900
 
   const Scene = Comlink.wrap(
     new Worker('./workers/Scene.js', { type: 'module' }),
   )
 
-  const image = await loadImageWithPromise(importedImage)
-  // image.style.display = 'none'
-  const texture = await createNewImageDataFromImage(image, 30)
+  const [blueImage, waterNormalImage] = await Promise.all([
+    loadImageWithPromise(importedImage),
+    loadImageWithPromise(water),
+  ])
+  const [{ data: blueData }, { data: waterNormalData }] = await Promise.all([
+    createNewImageDataFromImage(blueImage, 512),
+    createNewImageDataFromImage(waterNormalImage, 512),
+  ])
 
   const onResize = () => {
-    // We need to define the dimensions of the canvas to our canvas element
-    // Javascript doesn't know the computed dimensions from CSS so we need to do it manually
     width = canvas.offsetWidth
     height = canvas.offsetHeight
 
@@ -39,8 +41,16 @@ const Main = async () => {
 
   const offscreen = canvas.transferControlToOffscreen()
   new Scene(
-    { canvas: offscreen, height, width, texture },
-    Comlink.transfer(offscreen, [offscreen]),
+    Comlink.transfer(
+      {
+        canvas: offscreen,
+        texture: blueData.buffer,
+        height,
+        width,
+        normals: waterNormalData.buffer,
+      },
+      [offscreen, blueData.buffer, waterNormalData.buffer],
+    ),
   )
 }
 

@@ -26,30 +26,11 @@ const array2DFromImage = (array, imageWidth) => {
   return updatedArray
 }
 
-const createNewImageDataFromData = async (data, newSize) => {
-  const canvas = new OffscreenCanvas(newSize, newSize)
-  const context = canvas.getContext('2d')
-  const imageSize = Math.sqrt(data.length) / 2
-  const imageData = new ImageData(data, imageSize, imageSize)
-
-  const resizedImage = await createImageBitmap(imageData, {
-    resizeHeight: newSize,
-    resizeWidth: newSize,
-  })
-
-  context.drawImage(resizedImage, 0, 0)
-
-  const canvasData = context.getImageData(0, 0, newSize, newSize)
-  const resizedImageData = canvasData.data
-
-  return resizedImageData
-}
-
 const updatedVerticesFromTexture = (
   vertexAmount,
   verticesArray,
   texture,
-  factor = 0.025,
+  factor = 0.01,
 ) => {
   const resizedImageSize = texture.width
   const array2D = array2DFromImage(texture.data, resizedImageSize)
@@ -69,7 +50,7 @@ const updatedVerticesFromTexture = (
       const { r: red } = array2D[b][a]
       const { x, y, z } = updatedArray[f][u]
 
-      updatedArray[f][u] = new Vertex(x, y + red * factor, z)
+      updatedArray[f][u] = new Vertex(x, y, z + red * factor)
 
       b += gapBetweenPixels
       u++
@@ -83,12 +64,13 @@ const updatedVerticesFromTexture = (
   return updatedArray
 }
 
-const volumeFromTexture = (getSubVertices, size, texture) => {
+const volumeFromTexture = (getSubVertices, texture, factor) => {
   const vertexAmount = getSubVertices[0].length
   const updatedSubVertices = updatedVerticesFromTexture(
     vertexAmount,
     getSubVertices,
     texture,
+    factor,
   )
 
   return updatedSubVertices
