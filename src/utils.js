@@ -25,23 +25,34 @@ export const createNewImageDataFromImage = async (image, newSize) => {
   return canvasData
 }
 
-export const createNewImageFromData = async (data, newSize) => {
-  const imageSize = Math.sqrt(data.length) / 2
-  const imageData = new ImageData(data, imageSize, imageSize)
+export const createNewImageFromData = async (
+  data,
+  newSize = 255,
+  offscreenCanvas = new OffscreenCanvas(newSize, newSize),
+) => {
+  const context = offscreenCanvas.getContext('2d')
+  const imageSize = Math.sqrt(data.byteLength) / 2
+  const array = new Uint8ClampedArray(data)
+  const imageData = new ImageData(array, imageSize, imageSize)
 
   const resizedImage = await createImageBitmap(imageData, {
     resizeHeight: newSize,
     resizeWidth: newSize,
   })
 
-  return resizedImage
+  context.drawImage(resizedImage, 0, 0)
+
+  return {
+    resizedImage,
+    imageData: context.getImageData(0, 0, 255, 255),
+  }
 }
 
 const constrain = (n, low, high) => {
   return Math.max(Math.min(n, high), low)
 }
 
-export const map = async (n, start1, stop1, start2, stop2, withinBounds) => {
+export const map = (n, start1, stop1, start2, stop2, withinBounds) => {
   const newval = ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2
   if (!withinBounds) {
     return newval
@@ -51,4 +62,26 @@ export const map = async (n, start1, stop1, start2, stop2, withinBounds) => {
   } else {
     return constrain(newval, stop2, start2)
   }
+}
+
+export const normalize = (
+  number,
+  [min, max] = [0, 255],
+  [newMin, newMax] = [0, 1],
+) => {
+  const a = (newMax - newMin) / (max - min)
+  const b = newMax - a * max
+
+  return a * number + b
+}
+
+export const deNormalize = (
+  number,
+  [min, max] = [0, 1],
+  [newMin, newMax] = [0, 255],
+) => {
+  const a = (newMax - newMin) / (max - min)
+  const b = newMax - a * max
+
+  return a * number + b
 }
