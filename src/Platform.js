@@ -33,7 +33,7 @@ export default class Platform {
         this.vertices[x + this.divisions * y] = new Vertex(
           currentVertex.x,
           currentVertex.y,
-          r * ratio - 200,
+          r * ratio + 500,
         )
       }
     }
@@ -47,8 +47,8 @@ export default class Platform {
           y,
           new Vertex(
             this.position.x - this.half + this.divisionSize * x,
-            this.position.y - this.half + this.divisionSize * y - 200,
-            this.position.z,
+            this.position.y - this.half + this.divisionSize * y - 600,
+            this.position.z - 200,
           ),
         )
       }
@@ -152,7 +152,7 @@ export default class Platform {
   }
 
   project(vertex) {
-    var d = 300
+    var d = 700
     var r = d / vertex.y
 
     return new Vertex2D(r * vertex.x, r * vertex.z)
@@ -184,7 +184,7 @@ export default class Platform {
     }
   }
 
-  textureMap(vertexTris, textureTris, brightness, index) {
+  textureMap(vertexTris, textureTris, index) {
     const { x: x0, y: y0 } = this.project(vertexTris[0])
     const { x: x1, y: y1 } = this.project(vertexTris[1])
     const { x: x2, y: y2 } = this.project(vertexTris[2])
@@ -193,19 +193,19 @@ export default class Platform {
     const { x: u1, y: v1 } = textureTris[1]
     const { x: u2, y: v2 } = textureTris[2]
 
-    var delta = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2
-    var delta_a = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2
-    var delta_b = u0 * x1 + x0 * u2 + u1 * x2 - x1 * u2 - x0 * u1 - u0 * x2
-    var delta_c =
+    const delta = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2
+    const delta_a = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2
+    const delta_b = u0 * x1 + x0 * u2 + u1 * x2 - x1 * u2 - x0 * u1 - u0 * x2
+    const delta_c =
       u0 * v1 * x2 +
       v0 * x1 * u2 +
       x0 * u1 * v2 -
       x0 * v1 * u2 -
       v0 * u1 * x2 -
       u0 * x1 * v2
-    var delta_d = y0 * v1 + v0 * y2 + y1 * v2 - v1 * y2 - v0 * y1 - y0 * v2
-    var delta_e = u0 * y1 + y0 * u2 + u1 * y2 - y1 * u2 - y0 * u1 - u0 * y2
-    var delta_f =
+    const delta_d = y0 * v1 + v0 * y2 + y1 * v2 - v1 * y2 - v0 * y1 - y0 * v2
+    const delta_e = u0 * y1 + y0 * u2 + u1 * y2 - y1 * u2 - y0 * u1 - u0 * y2
+    const delta_f =
       u0 * v1 * y2 +
       v0 * y1 * u2 +
       y0 * u1 * v2 -
@@ -215,9 +215,6 @@ export default class Platform {
 
     this.context.save()
     this.context.beginPath()
-    // index === 1
-    //   ? this.context.moveTo(x0 - 1, y0 - 1)
-    //   : this.context.moveTo(x0 + 1, y0 + 1)
 
     this.context.moveTo(x0, y0)
     this.context.lineTo(x1, y1)
@@ -228,7 +225,6 @@ export default class Platform {
     // this.context.fill()
     // this.context.stroke()
     this.context.clip()
-
     this.context.transform(
       delta_a / delta,
       delta_d / delta,
@@ -238,18 +234,7 @@ export default class Platform {
       delta_f / delta,
     )
     this.context.drawImage(this.texture, 0, 0)
-
     this.context.restore()
-  }
-
-  brightness(x, y, slope) {
-    // if (y === this.max || x === this.max) return 'green'
-    const ratio = 6
-    const r = 9 + slope * ratio
-    const g = 38 + slope * ratio
-    const b = 89 + slope * ratio
-
-    return `rgb(${r}, ${g}, ${b})`
   }
 
   draw() {
@@ -280,14 +265,8 @@ export default class Platform {
             2: new Vertex2D(gap * (x + 1), gap * (y + 1)),
           }
 
-          const brightness = this.brightness(
-            x,
-            y,
-            this.get(x, y + 1).z - this.get(x, y).z,
-          )
-
-          this.textureMap(firstTriangle, firstTextureTriangle, brightness, 1)
-          this.textureMap(secondTriangle, secondTextureTriangle, brightness, 2)
+          this.textureMap(firstTriangle, firstTextureTriangle)
+          this.textureMap(secondTriangle, secondTextureTriangle)
         }
       }
     }
