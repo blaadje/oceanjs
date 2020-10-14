@@ -3,15 +3,16 @@
     "last 1 Chrome version"
   ],
   "devDependencies": {
-    "import-from-worker": "^1.0.1",
-    "parcel": "^2.0.0-beta.1"
+    "import-from-worker": "^1.0.1"
   },
   "scripts": {
     "start": "yarn parcel serve index.html -p 3000",
     "build": "yarn parcel build index.html --public-url ./"
   },
   "dependencies": {
+    "@sumup/performance-observer": "^1.0.1",
     "comlink": "^4.3.0",
+    "parcel": "^2.0.0-beta.1",
     "utils": "^0.3.1"
   }
 }
