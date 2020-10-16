@@ -1,32 +1,42 @@
-import { normalize } from '../utils'
+export const normalFromHeightmap = (heightmap, width, height) => {
+  const normalize = (
+    number,
+    [min, max] = [0, 255],
+    [newMin, newMax] = [0, 1],
+  ) => {
+    const a = (newMax - newMin) / (max - min)
+    const b = newMax - a * max
 
-export const normalFromHeightmap = (size, heightmap) => {
-  const canvas = new OffscreenCanvas(size, size)
+    return a * number + b
+  }
+
+  const canvas = new OffscreenCanvas(width, height)
   const context = canvas.getContext('2d', { alpha: false })
-  const imageData = context.createImageData(size, size)
+  const imageData = context.createImageData(width, height)
 
-  const heightmapData = new Int32Array(heightmap.data.buffer)
+  const heightmapData = new Int32Array(heightmap.buffer)
   const data = new Int32Array(imageData.data.buffer)
-  const max = size - 1
+  const maxWidth = width - 1
+  const maxHeight = height - 1
 
   const getHeightmap = (x, y) => {
     return {
-      r: heightmapData[x + size * y] & 255,
-      g: (heightmapData[x + size * y] >> 8) & 255,
-      b: (heightmapData[x + size * y] >> 16) & 255,
+      r: heightmapData[x + maxWidth * y] & 255,
+      g: (heightmapData[x + maxWidth * y] >> 8) & 255,
+      b: (heightmapData[x + maxWidth * y] >> 16) & 255,
     }
   }
 
   const intensity = ({ r, g, b }) => {
-    const average = (r + g + b) / 3
+    const average = r + g + b
 
-    return average / 255
+    return average / 80
   }
 
   const pStrength = 1
 
-  for (let y = 0; y <= max; y++) {
-    for (let x = 0; x <= max; x++) {
+  for (let y = 0; y <= maxHeight; y++) {
+    for (let x = 0; x <= maxWidth; x++) {
       const topLeft = getHeightmap(x - 1, y - 1)
       const top = getHeightmap(x, y - 1)
       const topRight = getHeightmap(x + 1, y - 1)
@@ -53,7 +63,7 @@ export const normalFromHeightmap = (size, heightmap) => {
       const i = normalize(dY, [-1, 1], [0, 255])
       const o = normalize(dZ, [-1, 1], [0, 255])
 
-      data[x + size * y] =
+      data[x + maxWidth * y] =
         (u & 255) | // red
         (i << 8) | // green
         (o << 16) | // blue
@@ -61,7 +71,5 @@ export const normalFromHeightmap = (size, heightmap) => {
     }
   }
 
-  context.putImageData(imageData, 0, 0)
-
-  return canvas
+  return imageData.data
 }

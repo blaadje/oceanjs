@@ -89,7 +89,10 @@ export const deNormalize = (
 export const genericWorker = ({ fn, workerAmount }) => {
   const workers = Array.from(
     { length: workerAmount },
-    () => new Worker('./workers/testworker.js', { type: 'module' }),
+    () =>
+      new Worker(new URL('./workers/testworker.js', import.meta.url), {
+        type: 'module',
+      }),
   )
   const stringifiedFn = fn.toString()
   const selectParamsBetweenParenthesis = stringifiedFn.substring(

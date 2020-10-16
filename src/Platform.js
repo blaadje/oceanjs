@@ -33,7 +33,7 @@ export default class Platform {
         this.vertices[x + this.divisions * y] = new Vertex(
           currentVertex.x,
           currentVertex.y,
-          r * ratio + 500,
+          r * ratio - 250,
         )
       }
     }
@@ -47,85 +47,12 @@ export default class Platform {
           y,
           new Vertex(
             this.position.x - this.half + this.divisionSize * x,
-            this.position.y - this.half + this.divisionSize * y - 600,
-            this.position.z - 200,
+            this.position.y - this.half + this.divisionSize * y - 680,
+            this.position.z - 300,
           ),
         )
       }
     }
-  }
-
-  generateTerrain() {
-    const half = -100
-    const topLeft = this.get(0, 0)
-    const topRight = this.get(this.max, 0)
-    const bottomLeft = this.get(this.max, this.max)
-    const bottomRight = this.get(0, this.max)
-
-    this.set(0, 0, new Vertex(topLeft.x, topLeft.y, half))
-    this.set(this.max, 0, new Vertex(topRight.x, topRight.y, half))
-    this.set(this.max, this.max, new Vertex(bottomLeft.x, bottomLeft.y, half))
-    this.set(0, this.max, new Vertex(bottomRight.x, bottomRight.y, half))
-
-    this.divide(this.max)
-  }
-
-  divide(size) {
-    let x,
-      y,
-      half = size / 2
-
-    const scale = this.roughness * size
-
-    if (half < 1) {
-      return
-    }
-
-    for (y = half; y < this.max; y += size) {
-      for (x = half; x < this.max; x += size) {
-        const currentPoint = this.get(x, y)
-        const avg = this.average([
-          this.get(x - half, y - half).z,
-          this.get(x + half, y - half).z,
-          this.get(x + half, y + half).z,
-          this.get(x - half, y + half).z,
-        ])
-
-        this.set(
-          x,
-          y,
-          new Vertex(
-            currentPoint.x,
-            currentPoint.y,
-            avg + Math.random() * scale * 2 - scale,
-          ),
-        )
-      }
-    }
-
-    for (y = 0; y <= this.max; y += half) {
-      for (x = (y + half) % size; x <= this.max; x += size) {
-        const currentPoint = this.get(x, y)
-        const avg = this.average([
-          this.get(x, y - half).z,
-          this.get(x + half, y).z,
-          this.get(x, y + half).z,
-          this.get(x - half, y).z,
-        ])
-
-        this.set(
-          x,
-          y,
-          new Vertex(
-            currentPoint.x,
-            currentPoint.y,
-            avg + Math.random() * scale * 2 - scale,
-          ),
-        )
-      }
-    }
-
-    this.divide(size / 2)
   }
 
   get(x, y) {
@@ -152,7 +79,7 @@ export default class Platform {
   }
 
   project(vertex) {
-    var d = 700
+    var d = 400
     var r = d / vertex.y
 
     return new Vertex2D(r * vertex.x, r * vertex.z)
@@ -213,13 +140,21 @@ export default class Platform {
       v0 * u1 * y2 -
       u0 * y1 * v2
 
-    this.context.save()
-    this.context.beginPath()
+      // this.context.imageSmoothingEnabled = false;
 
-    this.context.moveTo(x0, y0)
-    this.context.lineTo(x1, y1)
-    this.context.lineTo(x2, y2)
-    this.context.clip()
+      
+      const margin = 0
+      
+      // this.context.lineWidth = 0
+      // this.context.fillStyle = 'white'
+      this.context.save()
+      this.context.beginPath()
+      this.context.moveTo(x0, y0)
+      this.context.lineTo(x1, y1)
+      this.context.lineTo(x2, y2)
+      // this.context.closePath();
+      this.context.clip()
+      
     this.context.transform(
       delta_a / delta,
       delta_d / delta,
@@ -229,6 +164,7 @@ export default class Platform {
       delta_f / delta,
     )
     this.context.drawImage(this.texture, 0, 0)
+    // this.context.imageSmoothingEnabled = true;
     this.context.restore()
   }
 

@@ -11,5 +11,6 @@ addEventListener('message', ({ data }) => {
 
   const result = fn.apply(null, args)
 
+
   postMessage({ result, index }, [result.buffer])
 })
