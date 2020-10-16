@@ -184,7 +184,7 @@ export default class Platform {
     }
   }
 
-  textureMap(vertexTris, textureTris, index) {
+  textureMap(vertexTris, textureTris) {
     const { x: x0, y: y0 } = this.project(vertexTris[0])
     const { x: x1, y: y1 } = this.project(vertexTris[1])
     const { x: x2, y: y2 } = this.project(vertexTris[2])
@@ -219,11 +219,6 @@ export default class Platform {
     this.context.moveTo(x0, y0)
     this.context.lineTo(x1, y1)
     this.context.lineTo(x2, y2)
-    // this.context.lineWidth = 2
-    // this.context.fillStyle = brightness
-    // this.context.strokeStyle = brightness
-    // this.context.fill()
-    // this.context.stroke()
     this.context.clip()
     this.context.transform(
       delta_a / delta,

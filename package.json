@@ -6,7 +6,7 @@
     "import-from-worker": "^1.0.1"
   },
   "scripts": {
-    "start": "yarn parcel serve index.html -p 3000",
+    "start": "yarn parcel serve index.html --no-hmr -p 3000",
     "build": "yarn parcel build index.html --public-url ./"
   },
   "dependencies": {
