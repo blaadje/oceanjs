@@ -85,3 +85,71 @@ export const deNormalize = (
 
   return a * number + b
 }
+
+export const genericImageWorker = ({ fn, workerAmount }) => {
+  const workers = Array.from(
+    { length: workerAmount },
+    () => new Worker('./workers/testworker.js', { type: 'module' }),
+  )
+  const stringifiedFn = fn.toString()
+  const selectParamsBetweenParenthesis = stringifiedFn.substring(
+    stringifiedFn.indexOf('(') + 1,
+    stringifiedFn.indexOf(')'),
+  )
+
+  for (let index = 0; index < workerAmount; index++) {
+    const worker = workers[index]
+
+    worker.postMessage({
+      params: Boolean(selectParamsBetweenParenthesis)
+        ? selectParamsBetweenParenthesis
+        : stringifiedFn.substring(0, stringifiedFn.indexOf(' ')),
+      body: stringifiedFn.substring(
+        stringifiedFn.indexOf('{') + 1,
+        stringifiedFn.lastIndexOf('}'),
+      ),
+    })
+  }
+
+  return ({ textureToUpdate }, args) => {
+    return new Promise((resolve) => {
+      let finished = 0
+      const width = textureToUpdate.width
+      const height = textureToUpdate.height
+      const chunkHeight = Math.round(height / workerAmount)
+      const canvas = new OffscreenCanvas(width, height)
+      const context = canvas.getContext('2d', { alpha: false })
+
+      function onWorkEnded({ data }) {
+        const { imageData, index } = data
+
+        const result = new ImageData(imageData, width, chunkHeight)
+
+        context.putImageData(result, 0, chunkHeight * index)
+
+        finished++
+
+        if (finished === workerAmount) {
+          resolve(canvas.transferToImageBitmap())
+        }
+      }
+
+      for (let index = 0; index < workerAmount; index++) {
+        const worker = workers[index]
+        worker.onmessage = onWorkEnded
+
+        const textureToUpdateData = textureToUpdate
+          .getContext('2d')
+          .getImageData(0, chunkHeight * index, width, chunkHeight)
+
+        worker.postMessage(
+          {
+            index,
+            args: [textureToUpdateData.data, ...args, width, chunkHeight],
+          },
+          [textureToUpdateData.data.buffer],
+        )
+      }
+    })
+  }
+}
