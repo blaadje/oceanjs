@@ -15,8 +15,8 @@ const Main = async () => {
   canvas.width = width
   canvas.height = height
 
-  // canvas.style.transform = 'scale(2.3)'
-  canvas.style.userSelect = 'none'
+  // canvas.style.transform = 'scale(1.3)'
+  // canvas.style.userSelect = 'none'
   canvas.style.border = '1px solid black'
 
   const [normal1Image, normal2Image] = await Promise.all([
@@ -27,8 +27,8 @@ const Main = async () => {
     { data: normal1ImageData },
     { data: normal2ImageData },
   ] = await Promise.all([
-    createNewImageDataFromImage(normal1Image, 255),
-    createNewImageDataFromImage(normal2Image, 255),
+    createNewImageDataFromImage(normal1Image, 512),
+    createNewImageDataFromImage(normal2Image, 512),
   ])
 
   const offscreen = canvas.transferControlToOffscreen()
@@ -37,7 +37,7 @@ const Main = async () => {
     new Worker('./workers/Scene.js', { type: 'module' }),
   )
 
-  new Scene(
+  const instance = await new Scene(
     Comlink.transfer(
       {
         canvas: offscreen,
@@ -49,6 +49,21 @@ const Main = async () => {
       [offscreen, normal1ImageData.buffer, normal2ImageData.buffer],
     ),
   )
+
+  const foo = async (time) => {
+    await Promise.all([
+      instance.heightmap(time),
+      instance.normalFromHeight(),
+      instance.calculate(),
+      instance.animate(),
+      instance.makeNormals(),
+    ])
+    // await Promise.all([])
+
+    requestAnimationFrame(foo)
+  }
+
+  foo()
 }
 
 Main()

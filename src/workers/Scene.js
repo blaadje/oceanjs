@@ -15,11 +15,16 @@ const workerReflection = genericWorker({
   fn: reflection,
   workerAmount,
 })
+const workerNormalHeight = genericWorker({
+  fn: normalFromHeightmap,
+  workerAmount,
+})
 
 export default class Scene {
   constructor({ canvas, height, width, normal1, normal2 }) {
     this.canvas = canvas
     this.context = canvas.getContext('2d', { alpha: false })
+    this.context.fillStyle = 'white'
     this.height = height
     this.width = width
     this.PROJECTION_CENTER_X = this.width / 2
@@ -27,21 +32,23 @@ export default class Scene {
     this.context.translate(this.PROJECTION_CENTER_X, this.PROJECTION_CENTER_Y)
     this.flying = 0
     this.flyingY = 0
-    this.platformWidth = 512
+    this.platformWidth = 600
 
-    this.canvasWater = new OffscreenCanvas(
-      this.platformWidth,
-      this.platformWidth,
-    )
-    this.contextWater = this.canvasWater.getContext('2d', { alpha: false })
+    this.canvases = {
+      water: new OffscreenCanvas(this.platformWidth, this.platformWidth),
+      normals: new OffscreenCanvas(this.platformWidth, this.platformWidth),
+      height: new OffscreenCanvas(this.platformWidth, this.platformWidth),
+      normalHeight: new OffscreenCanvas(this.platformWidth, this.platformWidth),
+    }
 
-    this.canvasNormals = new OffscreenCanvas(
-      this.platformWidth,
-      this.platformWidth,
-    )
-    this.contextNormals = this.canvasNormals.getContext('2d', {
-      alpha: false,
-    })
+    this.contexts = {
+      water: this.canvases.water.getContext('2d', { alpha: false }),
+      normals: this.canvases.normals.getContext('2d', { alpha: false }),
+      height: this.canvases.height.getContext('2d', { alpha: false }),
+      normalHeight: this.canvases.normalHeight.getContext('2d', {
+        alpha: false,
+      }),
+    }
 
     this.init(normal1, normal2)
   }
@@ -58,26 +65,35 @@ export default class Scene {
     this.coloredTexture = this.createTexture(
       this.platformWidth,
       Math.round(this.platformWidth / workerAmount),
-      [9, 52, 97],
+      [9, 56, 110],
     )
 
     const center = new Vertex(0, 0, 0)
     this.platform = new Platform(
       center,
       this.platformWidth,
-      2,
+      6,
       this.coloredTexture.canvas,
       this.context,
       -this.PROJECTION_CENTER_X,
       -this.PROJECTION_CENTER_Y,
     )
     this.objects = [this.platform]
+  }
 
-    this.makeNormals()
-    this.calculate()
-    this.animate()
+  heightmap = (time = 0) => {
+    const ratio = 0.001
+    const smoothedTime = time * ratio
+    const size = 700
+    const heightmapResult = heightmap({
+      size: size,
+      time: smoothedTime,
+      distance: 0.6,
+      amplitude: 0.5,
+    })
 
-    setInterval(this.calculate, 60)
+    this.contexts.height.putImageData(heightmapResult, 0, 0)
+    this.platform.terrainFromTexture(heightmapResult, this.platformWidth)
   }
 
   createTexture(height, width, colors) {
@@ -112,7 +128,7 @@ export default class Scene {
   }
 
   draw() {
-    this.context.clearRect(
+    this.context.fillRect(
       -this.PROJECTION_CENTER_X,
       -this.PROJECTION_CENTER_Y,
       this.width,
@@ -134,9 +150,8 @@ export default class Scene {
 
       return canvas
     }
-
-    const blendedTexture = ({ texture1, texture2 } = {}) => {
-      const canvas = new OffscreenCanvas(255, 255)
+    const blendedTexture = ({ texture1, texture2, size = 255 } = {}) => {
+      const canvas = new OffscreenCanvas(size, size)
       const context = canvas.getContext('2d')
 
       context.drawImage(texture1, 0, 0)
@@ -148,13 +163,12 @@ export default class Scene {
 
     const translateTexture = ({
       texture,
-      speed = 0.09,
+      speed = 0.9,
       direction = 'x',
     } = {}) => {
       const size = texture.width
       const canvas = new OffscreenCanvas(size, size)
       const context = canvas.getContext('2d')
-
       const pattern = context.createPattern(texture, 'repeat')
 
       context.fillStyle = pattern
@@ -171,7 +185,6 @@ export default class Scene {
 
       return canvas
     }
-
     const detailWaveNormals = (normal1Data, normal2Data) => {
       return blendedTexture({
         texture1: translateTexture({
@@ -189,19 +202,60 @@ export default class Scene {
       this.platformWidth,
     )
 
-    this.contextNormals.drawImage(detailedNormals, 0, 0)
-    requestAnimationFrame(this.makeNormals)
+    const test = blendedTexture({
+      texture1: detailedNormals,
+      texture2: this.canvases.normalHeight,
+      size: this.platformWidth,
+    })
+
+    this.contexts.normals.drawImage(test, 0, 0)
+  }
+
+  normalFromHeight = () => {
+    const width = this.canvases.height.width
+    const height = this.canvases.height.height
+    const chunkHeight = Math.round(height / workerAmount)
+
+    const beforeWorker = (index) => {
+      const textureToUpdateData = this.contexts.height.getImageData(
+        0,
+        chunkHeight * index,
+        width,
+        chunkHeight,
+      )
+
+      return [
+        {
+          index,
+          args: [textureToUpdateData.data, width, chunkHeight],
+        },
+        [textureToUpdateData.data.buffer],
+      ]
+    }
+
+    const afterWorker = (result, index) => {
+      this.contexts.normalHeight.putImageData(
+        new ImageData(result, width, chunkHeight),
+        0,
+        chunkHeight * index,
+      )
+    }
+
+    workerNormalHeight({
+      beforeWorker,
+      afterWorker,
+    })
   }
 
   calculate = () => {
-    const width = this.canvasNormals.width
-    const height = this.canvasNormals.height
+    const width = this.canvases.normals.width
+    const height = this.canvases.normals.height
     const chunkHeight = Math.round(height / workerAmount)
 
     let reversedIndex = workerAmount
 
     const afterWorker = (result, index) => {
-      this.contextWater.putImageData(
+      this.contexts.water.putImageData(
         new ImageData(result, width, chunkHeight),
         0,
         chunkHeight * index,
@@ -209,7 +263,7 @@ export default class Scene {
     }
 
     const beforeWorker = (index) => {
-      const textureToUpdateData = this.contextNormals.getImageData(
+      const textureToUpdateData = this.contexts.normals.getImageData(
         0,
         chunkHeight * index,
         width,
@@ -224,10 +278,10 @@ export default class Scene {
             this.coloredTexture.imageData.data,
             {
               shiny: 1,
-              specularity: 4,
+              specularity: 5,
               lx: 700,
               ly: 0 + chunkHeight * reversedIndex,
-              lz: 10,
+              lz: 2,
             },
             width,
             chunkHeight,
@@ -249,9 +303,8 @@ export default class Scene {
 
   animate = () => {
     this.draw()
-    this.platform.setTexture(this.canvasWater)
-
-    requestAnimationFrame(this.animate)
+    this.platform.setTexture(this.canvases.water)
+    // requestAnimationFrame(this.animate)
   }
 }
 

@@ -33,7 +33,7 @@ export default class Platform {
         this.vertices[x + this.divisions * y] = new Vertex(
           currentVertex.x,
           currentVertex.y,
-          r * ratio + 500,
+          r * ratio - 250,
         )
       }
     }
@@ -47,8 +47,8 @@ export default class Platform {
           y,
           new Vertex(
             this.position.x - this.half + this.divisionSize * x,
-            this.position.y - this.half + this.divisionSize * y - 600,
-            this.position.z - 200,
+            this.position.y - this.half + this.divisionSize * y - 680,
+            this.position.z - 300,
           ),
         )
       }
@@ -219,6 +219,11 @@ export default class Platform {
     this.context.moveTo(x0, y0)
     this.context.lineTo(x1, y1)
     this.context.lineTo(x2, y2)
+    // this.context.lineWidth = 2
+    // this.context.fillStyle = brightness
+    // this.context.strokeStyle = 'white'
+    // this.context.fill()
+    // this.context.stroke()
     this.context.clip()
     this.context.transform(
       delta_a / delta,
