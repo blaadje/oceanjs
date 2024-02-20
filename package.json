@@ -1,10 +1,18 @@
 {
+  "browserslist": [
+    "last 1 Chrome version"
+  ],
   "devDependencies": {
-    "import-from-worker": "^1.0.1",
-    "parcel": "^1.12.4"
+    "import-from-worker": "^1.0.1"
   },
   "scripts": {
-    "start": "yarn parcel index.html —hmr-port 55432 -p 3000",
+    "start": "yarn parcel serve index.html --no-hmr -p 3000",
     "build": "yarn parcel build index.html --public-url ./"
+  },
+  "dependencies": {
+    "@sumup/performance-observer": "^1.0.1",
+    "comlink": "^4.3.0",
+    "parcel": "^2.11.0",
+    "utils": "^0.3.1"
   }
 }
